@@ -334,7 +334,7 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 			},
 			{
 				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("667")),
-				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("付文lan")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("付文兰")),
 				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
 			},
 		},

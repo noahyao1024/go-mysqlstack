@@ -45,8 +45,29 @@ func main() {
 	th.AddQuery("SELECT * FROM MOCK", result1)
 
 	// For initialization
-	th.AddQuery("set names utf8mb4", nil)
-	th.AddQuery("select version()", nil)
+	/*
+		mysql> select version();
+		+------------+
+		| version()  |
+		+------------+
+		| 5.7.24-log |
+		+------------+
+		1 row in set (0.00 sec)
+	*/
+
+	th.AddQuery("select version()", &sqltypes.Result{
+		Fields: []*querypb.Field{
+			{
+				Name: "version()",
+				Type: querypb.Type_VARCHAR,
+			},
+		},
+		Rows: [][]sqltypes.Value{
+			{
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("5.7.24-log")),
+			},
+		},
+	})
 
 	mysqld, err := driver.MockMysqlServerWithPort(log, 4407, th)
 	if err != nil {
