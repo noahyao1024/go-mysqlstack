@@ -44,6 +44,10 @@ func main() {
 	th := driver.NewTestHandler(log)
 	th.AddQuery("SELECT * FROM MOCK", result1)
 
+	// For initialization
+	th.AddQuery("set names utf8mb4", nil)
+	th.AddQuery("select version()", nil)
+
 	mysqld, err := driver.MockMysqlServerWithPort(log, 4407, th)
 	if err != nil {
 		log.Panic("mysqld.start.error:%+v", err)

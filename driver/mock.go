@@ -216,9 +216,6 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	log := th.log
 	query = strings.ToLower(query)
 
-	fmt.Println("FUCK I AM THE QUERY")
-	fmt.Println(query)
-
 	th.mu.Lock()
 	th.queryCalled[query]++
 	cond := th.conds[query]
@@ -310,6 +307,39 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 		}
 		return callback(v.conds[idx].Result)
 	}
+
+	fmt.Println("I GOT THIS SQL, I WILL CALL FOR MOCK HTTP API FOR SQL RESPONSE")
+	fmt.Println(query)
+
+	return callback(&sqltypes.Result{
+		Fields: []*querypb.Field{
+			{
+				Name: "id",
+				Type: querypb.Type_INT32,
+			},
+			{
+				Name: "name",
+				Type: querypb.Type_VARCHAR,
+			},
+			{
+				Name: "gender",
+				Type: querypb.Type_VARCHAR,
+			},
+		},
+		Rows: [][]sqltypes.Value{
+			{
+				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("666")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("朊思施")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
+			},
+			{
+				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("667")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("付文lan")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
+			},
+		},
+	})
+
 	return fmt.Errorf("mock.handler.query[%v].error[can.not.found.the.cond.please.set.first]", query)
 }
 
