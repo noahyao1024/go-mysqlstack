@@ -216,6 +216,9 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	log := th.log
 	query = strings.ToLower(query)
 
+	fmt.Println("FUCK I AM THE QUERY")
+	fmt.Println(query)
+
 	th.mu.Lock()
 	th.queryCalled[query]++
 	cond := th.conds[query]

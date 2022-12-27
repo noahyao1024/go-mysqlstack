@@ -241,6 +241,24 @@ func (l *Listener) handle(conn net.Conn, ID uint32) {
 		case sqldb.COM_QUERY:
 			query := l.parserComQuery(data)
 			if err = l.handler.ComQuery(session, query, nil, func(qr *sqltypes.Result) error {
+				qr = &sqltypes.Result{
+					Fields: []*querypb.Field{
+						{
+							Name: "id",
+							Type: querypb.Type_INT32,
+						},
+						{
+							Name: "name",
+							Type: querypb.Type_VARCHAR,
+						},
+					},
+					Rows: [][]sqltypes.Value{
+						{
+							sqltypes.MakeTrusted(querypb.Type_INT32, []byte("666")),
+							sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("朊思施")),
+						},
+					},
+				}
 				return session.writeTextRows(qr)
 			}); err != nil {
 				log.Error("server.handle.query.from.session[%v].error:%+v.query[%s]", ID, err, query)
