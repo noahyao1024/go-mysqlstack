@@ -43,6 +43,11 @@ func main() {
 	log := xlog.NewStdLog(xlog.Level(xlog.INFO))
 	th := driver.NewTestHandler(log)
 	th.AddQuery("SELECT * FROM MOCK", result1)
+	/*
+		th.AddQuery("insert into `mysql_stack_mock_test` (`token`) values ('ruansishi')", &sqltypes.Result{
+			InsertID: 123,
+		})
+	*/
 
 	// For initialization
 	/*
@@ -67,6 +72,10 @@ func main() {
 				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("5.7.24-log")),
 			},
 		},
+	})
+
+	th.AddQuery("start transaction", &sqltypes.Result{
+		Rows: [][]sqltypes.Value{},
 	})
 
 	mysqld, err := driver.MockMysqlServerWithPort(log, 4407, th)

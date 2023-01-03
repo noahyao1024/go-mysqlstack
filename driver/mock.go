@@ -10,6 +10,7 @@
 package driver
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -18,12 +19,22 @@ import (
 	"sync"
 	"time"
 
+	"git.lianjia.com/vrlab_server/gopkg/apiv2"
+	"git.lianjia.com/vrlab_server/gopkg/define"
+	"git.lianjia.com/vrlab_server/gopkg/logs"
 	"github.com/xelabs/go-mysqlstack/sqldb"
-	"github.com/xelabs/go-mysqlstack/xlog"
-
 	querypb "github.com/xelabs/go-mysqlstack/sqlparser/depends/query"
 	"github.com/xelabs/go-mysqlstack/sqlparser/depends/sqltypes"
+	"github.com/xelabs/go-mysqlstack/xlog"
 )
+
+func init() {
+	l := logs.NewLogger(1024)
+	l.AddProvider(logs.NewProviderConsole())
+	l.StartLogger()
+
+	apiv2.SetLogger(l)
+}
 
 func randomPort(min int, max int) int {
 	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -309,7 +320,34 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	}
 
 	fmt.Println("I GOT THIS SQL, I WILL CALL FOR MOCK HTTP API FOR SQL RESPONSE")
-	fmt.Println(query)
+	bindValues := make([]map[string]interface{}, 0)
+	for _, value := range bindVariables {
+		bindValues = append(bindValues, map[string]interface{}{
+			"type":  value.Type.String(),
+			"value": string(value.Value),
+		})
+	}
+
+	data := map[string]interface{}{
+		"request_mysql_query":             query,
+		"request_mysql_query_bind_values": bindValues,
+	}
+
+	bytes, _ := json.Marshal(data)
+	fmt.Println(string(bytes))
+
+	response, _ := apiv2.Request(nil, &define.APIOption{
+		BaseURI:        "http://test-api.knife.quality.realsee.com",
+		Method:         "POST",
+		URI:            "playback/mock",
+		ContentType:    "application/json",
+		RequestTimeout: 10 * 1000,
+		MessageKey:     "status",
+	}, map[string]string{"request_mysql_query": query}, nil,
+		bytes)
+
+	// TODO 解析她的BODY
+	fmt.Println(response.Body)
 
 	return callback(&sqltypes.Result{
 		Fields: []*querypb.Field{
