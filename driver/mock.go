@@ -342,14 +342,12 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 		URI:            "playback/mock",
 		ContentType:    "application/json",
 		RequestTimeout: 10 * 1000,
-		MessageKey:     "status",
+		MessageKey:     "errno",
+		DataKey:        "data",
 	}, map[string]string{"request_mysql_query": query}, nil,
 		bytes)
 
-	// TODO 解析她的BODY
-	fmt.Println(response.Body)
-
-	return callback(&sqltypes.Result{
+	testResult := &sqltypes.Result{
 		Fields: []*querypb.Field{
 			{
 				Name: "id",
@@ -376,7 +374,18 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
 			},
 		},
-	})
+	}
+
+	unmarshalResult := &sqltypes.Result{}
+	err := json.Unmarshal([]byte(response.Data), &unmarshalResult)
+	if err == nil {
+		return callback(unmarshalResult)
+	}
+
+	testBytes, _ := json.Marshal(testResult)
+	fmt.Println(response.Data, "unmarshal error", err, string(testBytes))
+
+	return callback(testResult)
 
 	return fmt.Errorf("mock.handler.query[%v].error[can.not.found.the.cond.please.set.first]", query)
 }
