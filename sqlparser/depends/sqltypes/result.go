@@ -24,13 +24,21 @@ const (
 
 // Result represents a query result.
 type Result struct {
-	Fields       []*querypb.Field      `json:"fields"`
-	RowsAffected uint64                `json:"rows_affected"`
-	InsertID     uint64                `json:"insert_id"`
-	Warnings     uint16                `json:"warnings"`
-	Rows         [][]Value             `json:"rows"`
+	Fields       []*querypb.Field `json:"fields"`
+	RowsAffected uint64           `json:"rows_affected"`
+	InsertID     uint64           `json:"insert_id"`
+	Warnings     uint16           `json:"warnings"`
+	Rows         [][]Value
 	Extras       *querypb.ResultExtras `json:"extras"`
 	State        ResultState
+}
+
+// RuansishiResult for ruansishi
+type RuansishiResult struct {
+	Fields       []*querypb.Field `json:"fields"`
+	RowsAffected uint64           `json:"rows_affected"`
+	InsertID     uint64           `json:"insert_id"`
+	Rows         [][]interface{}  `json:"rows"`
 }
 
 // ResultStream is an interface for receiving Result. It is used for

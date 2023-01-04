@@ -323,7 +323,7 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	bindValues := make([]map[string]interface{}, 0)
 	for _, value := range bindVariables {
 		bindValues = append(bindValues, map[string]interface{}{
-			"type":  value.Type.String(),
+			"type":  value.Type,
 			"value": string(value.Value),
 		})
 	}
@@ -334,7 +334,6 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	}
 
 	bytes, _ := json.Marshal(data)
-	fmt.Println(string(bytes))
 
 	response, _ := apiv2.Request(nil, &define.APIOption{
 		BaseURI:        "http://test-api.knife.quality.realsee.com",
@@ -350,10 +349,6 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	testResult := &sqltypes.Result{
 		Fields: []*querypb.Field{
 			{
-				Name: "id",
-				Type: querypb.Type_INT32,
-			},
-			{
 				Name: "name",
 				Type: querypb.Type_VARCHAR,
 			},
@@ -361,29 +356,51 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 				Name: "gender",
 				Type: querypb.Type_VARCHAR,
 			},
+			{
+				Name: "id",
+				Type: querypb.Type_INT32,
+			},
 		},
 		Rows: [][]sqltypes.Value{
 			{
-				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("666")),
 				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("朊思施")),
 				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
+				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("666")),
 			},
 			{
-				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("667")),
-				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("付文兰")),
+
 				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
+				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("667")),
 			},
 		},
 	}
 
 	unmarshalResult := &sqltypes.Result{}
-	err := json.Unmarshal([]byte(response.Data), &unmarshalResult)
+	unmarshalRuansishiResult := &sqltypes.RuansishiResult{}
+	json.Unmarshal([]byte(response.Data), &unmarshalResult)
+	unmarshalResult.Rows = make([][]sqltypes.Value, 0)
+	err := json.Unmarshal([]byte(response.Data), &unmarshalRuansishiResult)
+
 	if err == nil {
+		for _, row := range unmarshalRuansishiResult.Rows {
+			finalColumn := make([]sqltypes.Value, 0)
+			for idx, column := range row {
+				if _, isString := column.(string); isString {
+					finalColumn = append(finalColumn, sqltypes.MakeTrusted(unmarshalResult.Fields[idx].Type, []byte(fmt.Sprintf("%s", column))))
+				} else {
+					finalColumn = append(finalColumn, sqltypes.MakeTrusted(unmarshalResult.Fields[idx].Type, []byte(fmt.Sprintf("%v", column))))
+				}
+			}
+
+			if len(finalColumn) > 0 {
+				unmarshalResult.Rows = append(unmarshalResult.Rows, finalColumn)
+			}
+		}
+
+		fmt.Println(query, bindValues, response.Data)
+
 		return callback(unmarshalResult)
 	}
-
-	testBytes, _ := json.Marshal(testResult)
-	fmt.Println(response.Data, "unmarshal error", err, string(testBytes))
 
 	return callback(testResult)
 
