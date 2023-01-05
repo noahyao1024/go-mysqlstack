@@ -383,7 +383,7 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	decoder.UseNumber()
 	err := decoder.Decode(&unmarshalRuansishiResult)
 
-	fmt.Println("DEBUG", query, bindValues, response.Data)
+	fmt.Println("__DEBUG__", query, bindValues, response.Data)
 
 	if err == nil {
 		for _, row := range unmarshalRuansishiResult.Rows {
@@ -406,6 +406,11 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 		testResult.InsertID = 100
 		testResult.RowsAffected = 1
 		testResult.Rows = append(make([][]sqltypes.Value, 0), testResult.Rows[0])
+		testResult.Rows = make([][]sqltypes.Value, 0)
+	}
+
+	if strings.HasPrefix(query, "update") {
+		testResult.RowsAffected = 1
 		testResult.Rows = make([][]sqltypes.Value, 0)
 	}
 
