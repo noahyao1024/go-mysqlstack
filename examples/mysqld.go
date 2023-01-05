@@ -12,6 +12,7 @@ package main
 import (
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/xelabs/go-mysqlstack/driver"
@@ -21,6 +22,11 @@ import (
 )
 
 func main() {
+	port := 4407
+	if len(os.Args) >= 2 {
+		port, _ = strconv.Atoi(os.Args[1])
+	}
+
 	result1 := &sqltypes.Result{
 		Fields: []*querypb.Field{
 			{
@@ -74,11 +80,13 @@ func main() {
 		},
 	})
 
-	th.AddQuery("start transaction", &sqltypes.Result{
-		Rows: [][]sqltypes.Value{},
-	})
+	for _, sql := range []string{"start transaction", "commit"} {
+		th.AddQuery(sql, &sqltypes.Result{
+			Rows: [][]sqltypes.Value{},
+		})
+	}
 
-	mysqld, err := driver.MockMysqlServerWithPort(log, 4407, th)
+	mysqld, err := driver.MockMysqlServerWithPort(log, port, th)
 	if err != nil {
 		log.Panic("mysqld.start.error:%+v", err)
 	}

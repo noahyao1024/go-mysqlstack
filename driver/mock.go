@@ -319,7 +319,6 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 		return callback(v.conds[idx].Result)
 	}
 
-	fmt.Println("I GOT THIS SQL, I WILL CALL FOR MOCK HTTP API FOR SQL RESPONSE")
 	bindValues := make([]map[string]interface{}, 0)
 	for _, value := range bindVariables {
 		bindValues = append(bindValues, map[string]interface{}{
@@ -349,6 +348,10 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	testResult := &sqltypes.Result{
 		Fields: []*querypb.Field{
 			{
+				Name: "id",
+				Type: querypb.Type_INT32,
+			},
+			{
 				Name: "name",
 				Type: querypb.Type_VARCHAR,
 			},
@@ -356,30 +359,31 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 				Name: "gender",
 				Type: querypb.Type_VARCHAR,
 			},
-			{
-				Name: "id",
-				Type: querypb.Type_INT32,
-			},
 		},
 		Rows: [][]sqltypes.Value{
 			{
-				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("朊思施")),
-				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
 				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("666")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("思施")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
 			},
 			{
-
-				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
 				sqltypes.MakeTrusted(querypb.Type_INT32, []byte("667")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("文兰")),
+				sqltypes.MakeTrusted(querypb.Type_VARCHAR, []byte("Female")),
 			},
 		},
 	}
 
 	unmarshalResult := &sqltypes.Result{}
-	unmarshalRuansishiResult := &sqltypes.RuansishiResult{}
 	json.Unmarshal([]byte(response.Data), &unmarshalResult)
 	unmarshalResult.Rows = make([][]sqltypes.Value, 0)
-	err := json.Unmarshal([]byte(response.Data), &unmarshalRuansishiResult)
+
+	unmarshalRuansishiResult := &sqltypes.RuansishiResult{}
+	decoder := json.NewDecoder(strings.NewReader(response.Data))
+	decoder.UseNumber()
+	err := decoder.Decode(&unmarshalRuansishiResult)
+
+	fmt.Println("DEBUG", query, bindValues, response.Data)
 
 	if err == nil {
 		for _, row := range unmarshalRuansishiResult.Rows {
@@ -396,13 +400,20 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 				unmarshalResult.Rows = append(unmarshalResult.Rows, finalColumn)
 			}
 		}
-
-		fmt.Println(query, bindValues, response.Data)
-
-		return callback(unmarshalResult)
 	}
 
-	return callback(testResult)
+	if strings.HasPrefix(query, "insert") {
+		testResult.InsertID = 100
+		testResult.RowsAffected = 1
+		testResult.Rows = append(make([][]sqltypes.Value, 0), testResult.Rows[0])
+		testResult.Rows = make([][]sqltypes.Value, 0)
+	}
+
+	if len(response.Data) == 0 || response.Data == "{}" {
+		return callback(testResult)
+	}
+
+	return callback(unmarshalResult)
 
 	return fmt.Errorf("mock.handler.query[%v].error[can.not.found.the.cond.please.set.first]", query)
 }

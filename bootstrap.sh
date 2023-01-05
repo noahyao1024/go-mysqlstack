@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go run examples/mysqld.go
+go run examples/mysqld.go 4407

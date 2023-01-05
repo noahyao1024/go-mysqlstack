@@ -214,6 +214,7 @@ func (l *Listener) handle(conn net.Conn, ID uint32) {
 		}
 
 		// Update the session last query time for session idle.
+		fmt.Println(data[0])
 		session.updateLastQueryTime(time.Now())
 		switch data[0] {
 		// COM_QUIT
