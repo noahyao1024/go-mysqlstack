@@ -386,9 +386,30 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	fmt.Println("__DEBUG__", query, bindValues, response.Data)
 
 	if err == nil {
+		// Temp clean the column with time.Time.
+		fuckoffTimeBuckets := make(map[int]interface{}, 0)
+		for idx, row := range unmarshalRuansishiResult.Fields {
+			if strings.Contains(row.Name, "_time") {
+				fuckoffTimeBuckets[idx] = true
+			}
+		}
+
+		unmarshalResult.Fields = make([]*querypb.Field, 0)
+		for idx, row := range unmarshalRuansishiResult.Fields {
+			if _, fucked := fuckoffTimeBuckets[idx]; fucked {
+				continue
+			}
+
+			unmarshalResult.Fields = append(unmarshalResult.Fields, row)
+		}
+
 		for _, row := range unmarshalRuansishiResult.Rows {
 			finalColumn := make([]sqltypes.Value, 0)
 			for idx, column := range row {
+				if _, fucked := fuckoffTimeBuckets[idx]; fucked {
+					continue
+				}
+
 				if _, isString := column.(string); isString {
 					finalColumn = append(finalColumn, sqltypes.MakeTrusted(unmarshalResult.Fields[idx].Type, []byte(fmt.Sprintf("%s", column))))
 				} else {
