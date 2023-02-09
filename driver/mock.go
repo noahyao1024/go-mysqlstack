@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -321,12 +322,19 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	}
 
 	bindValues := make([]map[string]interface{}, 0)
-	for _, value := range bindVariables {
+	for key, value := range bindVariables {
 		bindValues = append(bindValues, map[string]interface{}{
+			"key":   key,
 			"type":  value.Type,
 			"value": string(value.Value),
 		})
 	}
+
+	sort.SliceStable(bindValues, func(i, j int) bool {
+		iv := fmt.Sprintf("%v", bindValues[i]["key"])
+		jv := fmt.Sprintf("%v", bindValues[j]["key"])
+		return iv <= jv
+	})
 
 	data := map[string]interface{}{
 		"request_mysql_query":             query,
