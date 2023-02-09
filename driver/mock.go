@@ -450,19 +450,6 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 		}
 	}
 
-	if strings.HasPrefix(query, "insert") {
-		return callback(&sqltypes.Result{
-			InsertID:     1,
-			RowsAffected: 1,
-		})
-	}
-
-	if strings.HasPrefix(query, "update") {
-		return callback(&sqltypes.Result{
-			RowsAffected: 1,
-		})
-	}
-
 	if len(response.Data) == 0 || response.Data == "{}" {
 		return callback(testResult)
 	}

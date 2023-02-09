@@ -53,6 +53,9 @@ func main() {
 		InsertID:     666,
 		RowsAffected: 1,
 	})
+	th.AddQuery("update `items` set `name`=?,`gender`=? where `id` = ?", &sqltypes.Result{
+		RowsAffected: 1,
+	})
 
 	/*
 		th.AddQuery("insert into `mysql_stack_mock_test` (`token`) values ('ruansishi')", &sqltypes.Result{
