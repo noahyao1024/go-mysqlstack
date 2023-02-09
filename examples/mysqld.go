@@ -49,6 +49,11 @@ func main() {
 	log := xlog.NewStdLog(xlog.Level(xlog.INFO))
 	th := driver.NewTestHandler(log)
 	th.AddQuery("SELECT * FROM MOCK", result1)
+	th.AddQuery("insert into `mock_db_test` (`name`,`gender`) values (?,?)", &sqltypes.Result{
+		InsertID:     666,
+		RowsAffected: 1,
+	})
+
 	/*
 		th.AddQuery("insert into `mysql_stack_mock_test` (`token`) values ('ruansishi')", &sqltypes.Result{
 			InsertID: 123,

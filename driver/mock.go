@@ -10,6 +10,7 @@
 package driver
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -397,7 +398,8 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 		unmarshalResult.Fields = make([]*querypb.Field, 0)
 		for idx, row := range unmarshalRuansishiResult.Fields {
 			if _, fucked := fuckoffTimeBuckets[idx]; fucked {
-				continue
+				// filer fucked fields
+				//continue
 			}
 
 			unmarshalResult.Fields = append(unmarshalResult.Fields, row)
@@ -407,14 +409,31 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 			finalColumn := make([]sqltypes.Value, 0)
 			for idx, column := range row {
 				if _, fucked := fuckoffTimeBuckets[idx]; fucked {
-					continue
+					//continue
 				}
 
-				if _, isString := column.(string); isString {
-					finalColumn = append(finalColumn, sqltypes.MakeTrusted(unmarshalResult.Fields[idx].Type, []byte(fmt.Sprintf("%s", column))))
-				} else {
-					finalColumn = append(finalColumn, sqltypes.MakeTrusted(unmarshalResult.Fields[idx].Type, []byte(fmt.Sprintf("%v", column))))
+				var bs []byte
+
+				switch v := column.(type) {
+				case string:
+					bs = []byte(fmt.Sprintf("%s", column))
+				case int64:
+					bs = make([]byte, 8)
+					fmt.Println(v, column)
+					binary.LittleEndian.PutUint64(bs, uint64(v))
+				case json.Number:
+					/* method1
+					fuck, _ := strconv.ParseUint(fmt.Sprintf("%v", v), 10, 64)
+					bs = make([]byte, 8)
+					binary.LittleEndian.PutUint64(bs, fuck)
+					*/
+
+					bs = []byte(v)
+				default:
+					panic("test")
 				}
+
+				finalColumn = append(finalColumn, sqltypes.MakeTrusted(unmarshalResult.Fields[idx].Type, bs))
 			}
 
 			if len(finalColumn) > 0 {
@@ -424,15 +443,16 @@ func (th *TestHandler) ComQuery(s *Session, query string, bindVariables map[stri
 	}
 
 	if strings.HasPrefix(query, "insert") {
-		testResult.InsertID = 100
-		testResult.RowsAffected = 1
-		testResult.Rows = append(make([][]sqltypes.Value, 0), testResult.Rows[0])
-		testResult.Rows = make([][]sqltypes.Value, 0)
+		return callback(&sqltypes.Result{
+			InsertID:     1,
+			RowsAffected: 1,
+		})
 	}
 
 	if strings.HasPrefix(query, "update") {
-		testResult.RowsAffected = 1
-		testResult.Rows = make([][]sqltypes.Value, 0)
+		return callback(&sqltypes.Result{
+			RowsAffected: 1,
+		})
 	}
 
 	if len(response.Data) == 0 || response.Data == "{}" {
